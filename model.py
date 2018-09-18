@@ -84,7 +84,7 @@ class Generator(nn.Module):
         #Convert upsampled feature maps to RBG space
         self.to_rgb=nn.ModuleList([nn.Conv2d(i,3, kernel_size=3, padding=1, bias=False) for i in nF])
     
-    def forward(self, x, c=None,step=0,alpha=-1,interpolate=False,partial=False):
+    def forward(self, x, c=None, step=0, alpha=-1, interpolate=False, partial=False):
         
         #Pass input through entire generator
         if not partial:
@@ -100,10 +100,10 @@ class Generator(nn.Module):
             for i,down in enumerate(self.down_sampling):
                 if i>len(self.down_sampling)-1-step:
                     x=down(x)
-            assert x.size()[2]==32
+            assert x.size()[2] == 32
             
-            out=self.bottleneck(x)
-            assert out.size()[1]==256
+            out = self.bottleneck(x)
+            assert out.size()[1] == 256
             
             prev_layer=out.clone()
             btlneck_out=out.clone()
@@ -115,7 +115,7 @@ class Generator(nn.Module):
                 if step>0 and i==step-2:
                     prev_layer=out.clone()
 
-            out=self.to_rgb[step](out)
+            out = self.to_rgb[step](out)
 
             # Fade in previous layer
             if step>0 and 0<=alpha<1:
@@ -169,22 +169,22 @@ class Discriminator(nn.Module):
         
     def forward(self, x,step=0,alpha=-1):
         
-        h=self.from_rgb[step](x)
+        h = self.from_rgb[step](x)
 
-        fade=True
-        for i,prog in enumerate(self.progressive):
-            if len(self.progressive)-step<=i:
-                h=prog(h)
-                if fade and 0<=alpha<1:
-                    skip_rgb=F.avg_pool2d(x,2)
-                    skip_rgb=self.from_rgb[step-1](skip_rgb)
+        fade = True
+        for i, prog in enumerate(self.progressive):
+            if len(self.progressive) - step <= i:
+                h = prog(h)
+                if fade and 0 <= alpha < 1:
+                    skip_rgb = F.avg_pool2d(x,2)
+                    skip_rgb = self.from_rgb[step-1](skip_rgb)
                     assert skip_rgb.size() == h.size()
-                    h=(1-alpha)*skip_rgb+alpha*h
+                    h = (1-alpha) * skip_rgb + alpha * h
                     fade=False
         
-        assert h.size()[2]==32
-        out=self.down_sample(h)
-
+        out = self.down_sample(h)
+        assert out.size()[2] == 2
+        
         out_src = self.conv1(out)
         out_cls = self.conv2(out)
         return out_src, out_cls.view(out_cls.size(0), out_cls.size(1)), h.view(x.size(0), -1)
